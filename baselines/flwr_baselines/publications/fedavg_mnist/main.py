@@ -10,7 +10,16 @@ from omegaconf import DictConfig
 
 from flwr_baselines.publications.fedavg_mnist import client, utils
 
-DEVICE: torch.device = torch.device("cpu")
+#DEVICE: torch.device = torch.device("cpu")
+DEVICE = torch.device("cuda")
+"""
+DEVICE = torch.device("cuda:0")
+torch.cuda.set_device(DEVICE)
+torch.cuda.set_per_process_memory_fraction(0.5)
+"""
+print(
+    f"Training on {DEVICE} using PyTorch {torch.__version__} and Flower {fl.__version__}"
+)
 
 
 @hydra.main(config_path="docs/conf", config_name="config", version_base=None)
@@ -29,6 +38,8 @@ def main(cfg: DictConfig) -> None:
         num_clients=cfg.num_clients,
         iid=cfg.iid,
         balance=cfg.balance,
+
+        
         learning_rate=cfg.learning_rate,
     )
 
@@ -43,13 +54,17 @@ def main(cfg: DictConfig) -> None:
         evaluate_fn=evaluate_fn,
         evaluate_metrics_aggregation_fn=utils.weighted_average,
     )
-
+    client_resources = None
+    if DEVICE.type == "cuda":
+        client_resources = {"num_gpus": 1}
+        print("----------cuda----------")
     # Start simulation
     history = fl.simulation.start_simulation(
         client_fn=client_fn,
         num_clients=cfg.num_clients,
         config=fl.server.ServerConfig(num_rounds=cfg.num_rounds),
         strategy=strategy,
+        client_resources=client_resources,
     )
 
     file_suffix: str = (
@@ -72,7 +87,6 @@ def main(cfg: DictConfig) -> None:
         cfg.expected_maximum,
         file_suffix,
     )
-
 
 if __name__ == "__main__":
     main()

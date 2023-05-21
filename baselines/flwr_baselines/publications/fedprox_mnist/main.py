@@ -13,7 +13,6 @@ from flwr_baselines.publications.fedprox_mnist import client, utils
 
 DEVICE: str = torch.device("cpu")
 
-
 @hydra.main(config_path="docs/conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     """Main function to run CNN federated learning on MNIST.
